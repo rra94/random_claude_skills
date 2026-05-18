@@ -61,8 +61,9 @@ For each shortlisted author:
 #   GET that URL → bs4 → regex for POSITION_PATTERNS → fill columns
 ```
 
-The position regex set used previously (in `/Users/rishav_gritt/cvpr2026/phase_d.py`) is a
-good starting point — copy it over.
+Use the position regex patterns enumerated in the "What Phase D does" section above as a
+starting point — they cover the common faculty / research-staff / postdoc / leadership /
+founder titles.
 
 ## Without Phase D
 

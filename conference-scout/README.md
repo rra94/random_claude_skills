@@ -196,8 +196,9 @@ Result on the original CVPR 2026 run:
 - 321 academic, 189 industry, 46 mixed sectors
 - 288 Senior, 120 Mid, 179 Junior by seniority bucket
 
-See the original session artifacts in `/Users/rishav_gritt/cvpr2026/` for the un-skilled
-versions of these scripts and the intermediate JSON checkpoints.
+The unskilled versions of these scripts (and their intermediate JSON checkpoints) live in
+the original development directory, separate from this skill — they're useful as a working
+reference when adapting the pipeline to a new conference but aren't required to run it.
 
 ---
 
