@@ -158,22 +158,37 @@ def match_titles(papers, arxiv_index, threshold):
     return matched
 
 
-def pdf_first_page(session, arxiv_id):
+def pdf_bytes_for(session, arxiv_id):
+    """Download an arxiv PDF; return raw bytes or empty bytes on failure."""
+    try:
+        r = session.get(f"https://arxiv.org/pdf/{arxiv_id}", timeout=60)
+        if r.status_code != 200 or len(r.content) < 1000:
+            return b""
+        return r.content
+    except Exception:
+        return b""
+
+
+def pdf_first_page_text(pdf_bytes):
     try:
         from pdfminer.high_level import extract_text
     except ImportError:
         return ""
+    if not pdf_bytes:
+        return ""
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
+        f.write(pdf_bytes); path = f.name
     try:
-        r = session.get(f"https://arxiv.org/pdf/{arxiv_id}", timeout=60)
-        if r.status_code != 200 or len(r.content) < 1000: return ""
-        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
-            f.write(r.content); path = f.name
-        try:
-            return extract_text(path, maxpages=1) or ""
-        finally:
-            os.unlink(path)
+        return extract_text(path, maxpages=1) or ""
     except Exception:
         return ""
+    finally:
+        os.unlink(path)
+
+
+# Back-compat shim — older callers still expect text from this name
+def pdf_first_page(session, arxiv_id):
+    return pdf_first_page_text(pdf_bytes_for(session, arxiv_id))
 
 
 def country_of(affil: str) -> str:
@@ -242,9 +257,36 @@ def parse_pdfs(matched, papers, session, cfg, results_path):
         return state
     print(f"  parsing {len(todo)} PDFs (workers={cfg['arxiv']['pdf_workers']})")
 
+    # Optional GROBID — produces structurally cleaner author/affiliation extracts than
+    # pdfminer + regex. Skill works without it (auto-fallback) but quality jumps when on.
+    grobid_url = None
+    grobid_cfg = cfg.get("grobid", {})
+    if grobid_cfg.get("enabled"):
+        try:
+            from grobid_parse import is_grobid_alive, parse_pdf_with_grobid
+            if is_grobid_alive(grobid_cfg.get("url", "http://localhost:8070")):
+                grobid_url = grobid_cfg.get("url", "http://localhost:8070")
+                print(f"  using GROBID at {grobid_url}")
+            else:
+                print(f"  GROBID configured but not reachable; falling back to pdfminer")
+        except ImportError:
+            pass
+
     def work(item):
         pid, aid = item
-        text = pdf_first_page(session, aid)
+        pdf_bytes = pdf_bytes_for(session, aid)
+        if not pdf_bytes:
+            return pid, {"title": paper_by_id[pid]["title"], "arxiv_id": aid,
+                         "affils": [], "authors": []}
+        # Try GROBID first if available
+        if grobid_url:
+            from grobid_parse import parse_pdf_with_grobid
+            authors, affils = parse_pdf_with_grobid(pdf_bytes, grobid_url)
+            if authors or affils:
+                return pid, {"title": paper_by_id[pid]["title"], "arxiv_id": aid,
+                             "affils": affils, "authors": authors}
+        # Fallback: pdfminer + regex
+        text = pdf_first_page_text(pdf_bytes)
         if not text:
             return pid, {"title": paper_by_id[pid]["title"], "arxiv_id": aid,
                          "affils": [], "authors": []}

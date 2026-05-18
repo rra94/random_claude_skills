@@ -193,7 +193,8 @@ conference-scout/
 │   ├── scrape_cvf.py                 CVF virtual site scraper
 │   ├── scrape_openreview.py          OpenReview API scraper
 │   ├── classify.py                   regex/keyword paper classifier
-│   ├── enrich_arxiv.py               arxiv bulk fetch + PDF first-page parse
+│   ├── enrich_arxiv.py               arxiv bulk fetch + PDF parse (GROBID if available)
+│   ├── grobid_parse.py               GROBID TEI parser helper (optional Docker dep)
 │   ├── ror_resolve.py                ROR registry → country + sector
 │   ├── enrich_openalex.py            OpenAlex seniority (sector via ROR)
 │   ├── filter_countries.py           country keep-list filter
@@ -204,6 +205,7 @@ conference-scout/
 │   ├── area_patterns.md              regex pattern library + how to write more
 │   ├── country_presets.md            named country bundles
 │   ├── ror_strategy.md               how ROR resolves affiliation → country + sector
+│   ├── grobid_setup.md               optional Docker-based PDF parser (better affil quality)
 │   ├── orchestration.md              how to re-run individual stages
 │   ├── phase_d_homepage.md           Brave API setup (optional homepage enrichment)
 │   ├── llm_classifier.md             swap in Anthropic API for higher classification accuracy

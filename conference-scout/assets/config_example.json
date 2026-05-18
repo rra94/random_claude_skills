@@ -110,6 +110,12 @@
     "sleep_seconds": 0.1
   },
 
+  "grobid": {
+    "enabled": false,
+    "url": "http://localhost:8070",
+    "_comment": "Set enabled=true after starting a local GROBID container: docker run --rm -d -p 8070:8070 lfoppiano/grobid:0.8.2"
+  },
+
   "brave_api_key": null,
 
   "_comment": "Set brave_api_key to a free Brave Search API key (https://api-dashboard.search.brave.com/) to enable Phase D homepage + position enrichment. If null, those columns stay empty."
