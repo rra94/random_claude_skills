@@ -42,9 +42,11 @@ visiting-scholar papers, the secondary US affiliation may match equally often as
 primary CN one.
 
 **Mitigation**:
-- Inspect the `affiliation` column directly — it shows the picked institution
-- If the affiliation string starts with a CN/HK institution but `country=US`, that's a
+- Inspect the `ror_name` and `affiliation` columns directly — they show the picked institution
+- If the affiliation string starts with a CN/HK institution but `ror_country=US`, that's a
   false positive
+- The `ror_score` column shows ROR's match confidence — scores ≥0.9 are very reliable;
+  0.7–0.9 warrant a glance
 
 ## 4. PDF parse noise (~5% of affiliations are garbage)
 

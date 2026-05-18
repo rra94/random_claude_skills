@@ -23,9 +23,11 @@ This is a long-running file-producing pipeline (~15–25 min for a typical run).
 1. **Scrape** the conference paper list (titles, authors, abstracts, URLs).
 2. **Classify** papers into the user's target research areas via regex/keyword matching.
 3. **Enrich** with affiliations via arxiv bulk fetch + per-paper PDF first-page parsing.
-4. **Filter** authors to the user's country keep-list.
-5. **Add sector + seniority** via OpenAlex author records.
-6. **Format** outputs into Sheets-friendly CSVs (wide, long, and one-row-per-author with
+4. **Resolve** each affiliation against the ROR registry — gives authoritative
+   institution name, ISO country code, and sector (academic/industry/government/nonprofit).
+5. **Filter** authors to the user's country keep-list.
+6. **Add seniority** via OpenAlex author records (works_count, h_index).
+7. **Format** outputs into Sheets-friendly CSVs (wide, long, and one-row-per-author with
    `paper_N_title/url/abstract` columns).
 
 ## When to use this skill
@@ -123,11 +125,19 @@ from China (CN) — include or exclude explicitly.
 
 ## Sector + seniority
 
-For each shortlisted author, the OpenAlex enrichment step pulls:
+`sector` (academic / industry / government / nonprofit / other) comes from the ROR
+registry's `organization.types` whenever ROR confidently resolves an affiliation
+(score ≥ 0.7). A regex classifier handles the residual rows where ROR returns no match.
 
-- `works_count`, `h_index`, `homepage_url`, `last_known_institution`
-- Derives `seniority` bucket from `works_count`/`h_index` thresholds
-- Derives `sector` from affiliation regex (industry / academic / mixed)
+For `seniority`, the OpenAlex enrichment step pulls each author's `works_count` +
+`h_index` + `homepage_url` and buckets them:
+
+| Bucket | works_count | h_index |
+|---|---|---|
+| Senior (Faculty/Principal) | ≥ 80 | OR ≥ 30 |
+| Mid (Postdoc/Sr.Researcher) | ≥ 30 | OR ≥ 15 |
+| Junior (Late PhD/Early career) | ≥ 5 | — |
+| Junior (PhD student?) | ≥ 1 | — |
 
 Same-name disambiguation is best-effort — see "Known limitations" below.
 
@@ -184,7 +194,8 @@ conference-scout/
 │   ├── scrape_openreview.py          OpenReview API scraper
 │   ├── classify.py                   regex/keyword paper classifier
 │   ├── enrich_arxiv.py               arxiv bulk fetch + PDF first-page parse
-│   ├── enrich_openalex.py            OpenAlex seniority + sector
+│   ├── ror_resolve.py                ROR registry → country + sector
+│   ├── enrich_openalex.py            OpenAlex seniority (sector via ROR)
 │   ├── filter_countries.py           country keep-list filter
 │   └── format_output.py              produces all CSV shapes
 ├── references/
@@ -192,6 +203,7 @@ conference-scout/
 │   ├── openreview_strategy.md
 │   ├── area_patterns.md              regex pattern library + how to write more
 │   ├── country_presets.md            named country bundles
+│   ├── ror_strategy.md               how ROR resolves affiliation → country + sector
 │   ├── orchestration.md              how to re-run individual stages
 │   ├── phase_d_homepage.md           Brave API setup (optional homepage enrichment)
 │   ├── llm_classifier.md             swap in Anthropic API for higher classification accuracy

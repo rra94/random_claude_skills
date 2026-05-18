@@ -15,6 +15,7 @@ STAGES = [
     ("scrape",          "scrape"),           # picks scrape_cvf or scrape_openreview from config
     ("classify",        "classify.py"),
     ("enrich_arxiv",    "enrich_arxiv.py"),
+    ("ror_resolve",     "ror_resolve.py"),   # ROR-based country + sector; cached
     ("filter",          "filter_countries.py"),
     ("enrich_openalex", "enrich_openalex.py"),
     ("format",          "format_output.py"),

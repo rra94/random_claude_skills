@@ -108,10 +108,29 @@ This is the load-bearing step.
 Final coverage: ~50% of authors get a confident affiliation from this step. The other ~50%
 fall into `*_unknown_country.csv` (no arxiv preprint OR PDF parse glitch).
 
-### 4. Country filter
+### 4. Resolve affiliations against ROR
 
-Country codes derived in step 3 are filtered against a user-specified keep-list. Common
-presets (`references/country_presets.md`):
+The raw affiliation strings extracted in step 3 are messy ("Dept. of CS, Tsinghua Univ.,
+Beijing 2Adobe Research"). The `ror_resolve` stage hands each unique string to the
+[Research Organization Registry API](https://ror.org) and gets back a structured record:
+authoritative institution name, ISO country code, sector (`education` / `company` /
+`government` / `nonprofit` / `healthcare` / etc.), and a stable ROR ID.
+
+ROR is free, no key needed. Lookups are cached per unique affiliation string in
+`ror_cache.json` so reruns are fast. Confidence threshold is 0.7 — matches below that
+fall back to the regex-derived country/sector values.
+
+This step is the single biggest win for affiliation quality: it adds country codes
+for ~20% of authors who had unknown country from the regex tables alone, and it gives
+us authoritative sector labels (academic vs industry) without maintaining a hand-curated
+company list.
+
+See `references/ror_strategy.md` for details and known limitations.
+
+### 5. Country filter
+
+Country codes derived in steps 3–4 are filtered against a user-specified keep-list.
+Common presets (`references/country_presets.md`):
 
 - `us_friendly_western`: US, CA, GB, all EU + EFTA, IL
 - `english_speaking`: US, CA, GB, IE, AU, NZ
@@ -121,14 +140,13 @@ Hong Kong (HK) and Taiwan (TW) are tracked separately from mainland China (CN) �
 or exclude explicitly. Authors with unknown country are kept in a separate CSV so they
 can be enriched manually or re-processed later.
 
-### 5. Add sector + seniority via OpenAlex
+### 6. Add seniority via OpenAlex
 
 For each shortlisted author, query the OpenAlex authors endpoint by name. Disambiguate
 candidates by checking whether their `last_known_institutions` matches the arxiv-derived
 affiliation. From the picked candidate:
 
 - `works_count` and `h_index` → seniority bucket
-- Affiliation regex → sector (academic / industry / mixed)
 - `homepage_url` (rarely populated in OpenAlex — ~5% hit rate)
 
 Seniority buckets:
@@ -140,10 +158,14 @@ Seniority buckets:
 | Junior (Late PhD/Early career) | ≥ 5 | — |
 | Junior (PhD student?) | ≥ 1 | — |
 
+The `sector` (academic/industry/government/nonprofit) is populated upstream by
+`ror_resolve` (step 4); OpenAlex enrichment just adds the seniority signals. For rows
+where ROR didn't match, a regex fallback fills `sector` from the affiliation string.
+
 This is best-effort — common names ("Hao Li", "Bo Li") will collapse multiple distinct
 researchers into one record with inflated stats. Spot-check senior outliers.
 
-### 6. (Optional) Phase D — find homepage + position
+### 7. (Optional) Phase D — find homepage + position
 
 Per-author search-engine scrape to find personal homepages, then regex for position
 (Professor, PhD Student, Research Scientist, etc.).

@@ -96,7 +96,14 @@ def main():
     df["affiliation"] = df["affiliation"].fillna("")
     print(f"[enrich_openalex] {len(df)} filtered authors")
 
-    df["sector"] = df["affiliation"].apply(classify_sector)
+    # Prefer ROR-derived sector when present (more accurate than regex); fall back to
+    # the regex classifier for rows where ROR returned nothing.
+    if "ror_sector" in df.columns:
+        df["sector"] = df["ror_sector"].fillna("").where(
+            df["ror_sector"].fillna("") != "",
+            df["affiliation"].apply(classify_sector))
+    else:
+        df["sector"] = df["affiliation"].apply(classify_sector)
 
     works, h_idx, sen, ids, hp = [None]*len(df), [None]*len(df), [""]*len(df), [""]*len(df), [""]*len(df)
     print("  fetching OpenAlex records…")
