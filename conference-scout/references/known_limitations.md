@@ -23,7 +23,7 @@ affect outreach quality.
 **Symptom**: "Hao Li" has 7 matched papers spanning unrelated areas; "Bo Li" has 6;
 "Yi Yang" has 6. Their seniority bucket shows Senior despite half of them being PhD students.
 
-**Cause**: we dedupe by exact name string. CS has many duplicate names, especially Chinese
+**Cause**: dedupe is by exact name string. CS has many duplicate names, especially Chinese
 and Korean names romanized identically. ~5–10% of common names are silent merges.
 
 **Mitigation**:
@@ -37,8 +37,9 @@ and Korean names romanized identically. ~5–10% of common names are silent merg
 **Symptom**: An author with papers from "Nanjing University, 2Visiting at Stanford" gets
 labeled US.
 
-**Cause**: we count each parsed affiliation equally and take the plurality. For visiting-
-scholar papers, the secondary US affiliation may match equally often as the primary CN one.
+**Cause**: each parsed affiliation is counted equally and the plurality wins. For
+visiting-scholar papers, the secondary US affiliation may match equally often as the
+primary CN one.
 
 **Mitigation**:
 - Inspect the `affiliation` column directly — it shows the picked institution
@@ -74,9 +75,9 @@ closely related.
 **Symptom**: "Xing Zhu" gets `works_count=3266`, `h_index=106` — way too high for a real
 person in CV; that's all "Xing Zhu"s in OpenAlex collapsed.
 
-**Cause**: our disambiguation matches the author's arxiv-derived affiliation against
-OpenAlex candidates' `last_known_institutions`. When no candidate matches the affiliation,
-we fall back to the top textual-match candidate, which may be a different person entirely.
+**Cause**: disambiguation matches the author's arxiv-derived affiliation against OpenAlex
+candidates' `last_known_institutions`. When no candidate matches the affiliation, the
+fallback is the top textual-match candidate — which may be a different person entirely.
 
 **Mitigation**:
 - Treat `seniority` as a rough bucket, not exact

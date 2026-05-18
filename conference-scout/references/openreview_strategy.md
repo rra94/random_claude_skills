@@ -36,16 +36,16 @@ and ICML profiles usually have current institutions; NeurIPS is hit-or-miss for 
 3. Filter to those whose `content.venueid.value` contains `venue_id` (drops withdrawn/rejected).
 4. Extract title, authors, authorids, abstract, keywords → `papers_raw.json`.
 
-## Why we don't currently fetch affiliations via OpenReview profiles here
+## Why the skill doesn't pull affiliations from OpenReview profiles
 
-We tried — `client.get_profiles(authorids)` returns a `last_known_institution` field, but:
+`client.get_profiles(authorids)` exposes a `last_known_institution` field, but:
 - Coverage is uneven across venues
 - The arxiv enrichment path already covers everyone with a preprint
-- Trying both can produce conflicting affiliations (OpenReview profile vs arxiv first page);
+- Combining both produces conflicting affiliations (OpenReview profile vs arxiv first page);
   arxiv is more current
 
-If you need OpenReview-profile affiliations, extend `enrich_arxiv.py` with a parallel
-OpenReview profile fetch and merge the results, preferring arxiv when both exist.
+To add OpenReview-profile affiliations as a fallback, extend `enrich_arxiv.py` with a
+parallel OpenReview profile fetch and merge the results, preferring arxiv when both exist.
 
 ## Common pitfalls
 

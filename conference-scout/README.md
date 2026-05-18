@@ -37,9 +37,8 @@ work.
 
 ## Pipeline steps (what actually happens)
 
-This skill is the productionized version of a pipeline we built and debugged from scratch.
-Each step below also lists what we tried that **didn't** work, so future maintainers don't
-walk the same path.
+Each step below documents what the pipeline does and — where relevant — alternate
+approaches that don't work, so a maintainer adapting the skill knows which forks to avoid.
 
 ### 1. Scrape the conference paper list
 
@@ -50,12 +49,11 @@ walk the same path.
 **OpenReview venues (NeurIPS / ICLR / ICML / COLM)** — query the OpenReview API v2 for
 all accepted submissions under the venue group.
 
-Notes from the field:
+Notes:
 - **CVPR is NOT on OpenReview** for the main conference, despite a `thecvf.com/CVPR/...`
-  group existing there. The main track uses Microsoft CMT. Only workshop proposals live
-  on OpenReview. We confirmed 0 results when first attempting the OpenReview path. CVF
-  virtual site is the proven source for CVPR.
-- The virtual site contains author names but **no affiliations** anywhere — that has to
+  group existing there. The main track uses Microsoft CMT; only workshop proposals live
+  on OpenReview. The OpenReview path returns 0 results for CVPR — use the CVF virtual site.
+- The virtual site contains author names but **no affiliations** anywhere — those have to
   come from arxiv (step 3).
 
 ### 2. Classify papers into target research areas
@@ -75,9 +73,9 @@ Output: subset of papers that match at least one target area (typically ~25% of 
 
 ### 3. Enrich with affiliations via arxiv (the critical step)
 
-This is the load-bearing step and the one with the most debug history.
+This is the load-bearing step.
 
-**What works** — bulk arxiv fetch + local title match + parallel PDF first-page parse:
+**Approach** — bulk arxiv fetch + local title match + parallel PDF first-page parse:
 
 1. Query arxiv API for ALL papers in `cs.CV`, `cs.AI`, `cs.LG`, `cs.RO`, `cs.GR`, `cs.MM`
    within the conference's preprint window (e.g. Sep 2025 – May 2026 for CVPR 2026).
@@ -92,18 +90,20 @@ This is the load-bearing step and the one with the most debug history.
    tagged author names. Map author position → affiliation index.
 7. Infer country from affiliation string via a hand-curated keyword table.
 
-**What didn't work**:
+**Alternatives that don't work for very recent conferences**:
 
-- **Semantic Scholar API** — returned HTTP 429 (rate limited) on every request. Script
-  silently swallowed the errors, producing 0% coverage. Would work with an S2 API key.
-- **OpenAlex paper-search → author IDs** — OpenAlex hasn't indexed CVPR 2026 papers' author
-  IDs yet (they're `null`), and naive name-only matching returned wrong same-name people
-  (e.g. "Hao Dong" matched to "China Tobacco" instead of Peking University).
-- **OpenAlex author-name search with disambiguation by co-author** — same noisy result,
-  high false-positive rate for common Chinese names.
-- **Per-title arxiv search (one query per paper)** — works but arxiv rate-limits at ~3s
-  per query → 60 min for 1000 papers AND was buggy: our `<title>` regex matched the feed's
-  query echo, not the entry's paper title, rejecting valid matches. Bulk approach fixes both.
+- **Semantic Scholar API (unauthenticated)** — returns HTTP 429 within a handful of
+  requests and stays throttled. Would work with an S2 API key, otherwise produces 0%
+  coverage.
+- **OpenAlex paper-search → author IDs** — for very recent conferences (e.g. just-announced
+  acceptances), OpenAlex hasn't linked author IDs yet (they come back as `null`). Name-only
+  fallbacks return the wrong same-name person for common names.
+- **OpenAlex author-name search with co-author disambiguation** — noisy on common names;
+  high false-positive rate.
+- **Per-title arxiv search (one query per paper)** — arxiv rate-limits at ≥3 s per query
+  (~60 min for 1,000 papers), and the response feed's `<title>` element echoes the query
+  string before each paper entry, so a naive title-similarity check rejects valid matches.
+  The bulk approach sidesteps both issues.
 
 Final coverage: ~50% of authors get a confident affiliation from this step. The other ~50%
 fall into `*_unknown_country.csv` (no arxiv preprint OR PDF parse glitch).

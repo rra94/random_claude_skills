@@ -21,12 +21,12 @@ consistent URL pattern:
 
 ## What's NOT on the CVF site
 
-- **No affiliations anywhere** — we verified via grep for "institution/affiliation/university"
-  keywords (0 hits on poster pages). Only names.
+- **No affiliations anywhere** — grepping the poster pages for "institution / affiliation /
+  university" keywords returns 0 hits. Only names.
 - **No author profile links** — author tokens are plain text, not links.
 - **No JSON/API endpoint** — paper data is server-rendered HTML only.
 
-This is why arxiv enrichment (step 3) is essential: it's the only way to get affiliations.
+This is why arxiv enrichment (step 3) is essential — it's the only path to affiliations.
 
 ## Common pitfalls
 
