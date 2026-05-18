@@ -103,7 +103,14 @@
 
   "openalex": {
     "mailto": "you@example.com",
-    "sleep_seconds": 0.12
+    "sleep_seconds": 0.12,
+    "_comment": "OpenAlex moved to a paid model in 2026 ($1/day free tier). For conference-sized runs (>~800 authors), use enrich_s2.py with a free Semantic Scholar API key instead."
+  },
+
+  "s2": {
+    "api_key": null,
+    "sleep_seconds": 0.05,
+    "_comment": "Get a free key at https://www.semanticscholar.org/product/api. Or set S2_API_KEY env var."
   },
 
   "ror": {

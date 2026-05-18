@@ -204,6 +204,7 @@ conference-scout/
 │   ├── ror_resolve.py                ROR registry → country + sector (parallel)
 │   ├── openreview_profile_fallback.py  optional fallback for unknown-country authors
 │   ├── enrich_openalex.py            OpenAlex seniority + disambiguation confidence
+│   ├── enrich_s2.py                  Semantic Scholar alternative (OpenAlex went paid in 2026)
 │   ├── filter_countries.py           country keep-list filter
 │   └── format_output.py              produces all CSV shapes
 ├── references/
