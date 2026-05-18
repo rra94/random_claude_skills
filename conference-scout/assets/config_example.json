@@ -107,7 +107,8 @@
   },
 
   "ror": {
-    "sleep_seconds": 0.1
+    "sleep_seconds": 0.1,
+    "workers": 5
   },
 
   "grobid": {

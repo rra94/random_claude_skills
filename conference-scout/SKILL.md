@@ -107,8 +107,12 @@ regex patterns; a paper matches if any pattern hits its title or abstract. See
   models, robot learning, VLA, etc.)
 - When to add a new area vs. expanding an existing one
 
-For higher-precision classification, the user can substitute an Anthropic API key — see
-`references/llm_classifier.md`. The default regex classifier is sufficient for most uses.
+For higher-precision classification, two stronger options are available:
+- `classify_hybrid.py` — runs regex first then asks Claude to confirm/reject each match
+  (best precision/cost tradeoff, requires `ANTHROPIC_API_KEY`, see `references/llm_classifier.md`)
+- Full LLM classification on every paper (see `references/llm_classifier.md`)
+
+The default regex classifier is sufficient for most uses.
 
 ## Country filtering
 
@@ -191,12 +195,15 @@ conference-scout/
 ├── scripts/
 │   ├── pipeline.py                   orchestrator — run end-to-end
 │   ├── scrape_cvf.py                 CVF virtual site scraper
+│   ├── scrape_cvf_openaccess.py      optional post-conference CVF Open Access PDF scrape
 │   ├── scrape_openreview.py          OpenReview API scraper
 │   ├── classify.py                   regex/keyword paper classifier
-│   ├── enrich_arxiv.py               arxiv bulk fetch + PDF parse (GROBID if available)
+│   ├── classify_hybrid.py            optional: regex recall → Claude precision filter
+│   ├── enrich_arxiv.py               arxiv bulk fetch + PDF parse (GROBID if available); extracts emails
 │   ├── grobid_parse.py               GROBID TEI parser helper (optional Docker dep)
-│   ├── ror_resolve.py                ROR registry → country + sector
-│   ├── enrich_openalex.py            OpenAlex seniority (sector via ROR)
+│   ├── ror_resolve.py                ROR registry → country + sector (parallel)
+│   ├── openreview_profile_fallback.py  optional fallback for unknown-country authors
+│   ├── enrich_openalex.py            OpenAlex seniority + disambiguation confidence
 │   ├── filter_countries.py           country keep-list filter
 │   └── format_output.py              produces all CSV shapes
 ├── references/

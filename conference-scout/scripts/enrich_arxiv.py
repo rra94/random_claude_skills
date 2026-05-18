@@ -209,6 +209,33 @@ AFFIL_KEYWORD = re.compile(
 AFFIL_LINE = re.compile(r"^\s*(\d{1,2})[\s\.\)]*\s*(.+?)\s*$")
 AUTHOR_TOKEN = re.compile(
     r"([A-Z][A-Za-zÀ-ÿ\.\-']+(?:\s+[A-Z][A-Za-zÀ-ÿ\.\-']+){0,4})\s*([\d,†\*†‡§]*)")
+EMAIL_PATTERN = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")
+
+
+def match_emails_to_authors(emails: list[str], authors: list[dict]) -> None:
+    """Heuristically link first-page emails to parsed authors by local-part similarity.
+    Mutates each author dict to add `email`. Local parts often match firstname.lastname,
+    lastname, or initials — fuzzy match against the author's name tokens.
+    """
+    used = set()
+    for au in authors:
+        if au.get("email"): continue
+        name = au["name"].lower()
+        tokens = [t for t in re.split(r"[\s\.\-']", name) if len(t) >= 2]
+        best, best_score = None, 0
+        for em in emails:
+            if em in used: continue
+            local = em.split("@", 1)[0].lower()
+            # Score: count tokens that appear in the local part as substrings
+            score = sum(1 for t in tokens if t in local or local in t)
+            # Bonus for last-name match (last token of the name)
+            if tokens and tokens[-1] in local:
+                score += 1
+            if score > best_score:
+                best, best_score = em, score
+        if best and best_score >= 1:
+            au["email"] = best
+            used.add(best)
 
 
 def parse_authors_and_affils(text: str):
@@ -246,6 +273,12 @@ def parse_authors_and_affils(text: str):
         k = a["name"].lower()
         if k in seen: continue
         seen.add(k); deduped.append(a)
+
+    # Extract emails from first page text and link them to authors by local-part similarity
+    emails = list(dict.fromkeys(EMAIL_PATTERN.findall(text)))  # dedupe preserving order
+    if emails:
+        match_emails_to_authors(emails, deduped)
+
     return deduped, affils
 
 
@@ -318,6 +351,7 @@ def aggregate(papers, state, cfg, out_dir):
     papers_by_id = {p["paper_id"]: p for p in papers}
 
     name_to_affils, name_to_countries = defaultdict(Counter), defaultdict(Counter)
+    name_to_emails = defaultdict(Counter)
     for pid, rec in state.items():
         if not rec.get("affils"): continue
         paper = papers_by_id.get(pid)
@@ -335,6 +369,8 @@ def aggregate(papers, state, cfg, out_dir):
             for a in affs:
                 name_to_affils[cvpr_name][a["text"]] += 1
                 if a["country"]: name_to_countries[cvpr_name][a["country"]] += 1
+            if pa and pa.get("email"):
+                name_to_emails[cvpr_name][pa["email"]] += 1
 
     # candidates.csv: one row per author×paper
     cand_rows = []
@@ -361,15 +397,17 @@ def aggregate(papers, state, cfg, out_dir):
     ).reset_index().sort_values("n_matched_papers", ascending=False)
     agg.to_csv(os.path.join(out_dir, f"{conf}_unique_authors.csv"), index=False)
 
-    # authors_arxiv.csv: unique + affiliation + country
+    # authors_arxiv.csv: unique + affiliation + country + email
     rows = []
     for _, row in agg.iterrows():
         name = row["author_name"]
         affs = name_to_affils.get(name, Counter())
         ctrys = name_to_countries.get(name, Counter())
+        emails = name_to_emails.get(name, Counter())
         rows.append({**row.to_dict(),
                      "affiliation": affs.most_common(1)[0][0] if affs else "",
-                     "country": ctrys.most_common(1)[0][0] if ctrys else ""})
+                     "country": ctrys.most_common(1)[0][0] if ctrys else "",
+                     "email": emails.most_common(1)[0][0] if emails else ""})
     out = pd.DataFrame(rows)
     out.to_csv(os.path.join(out_dir, f"{conf}_authors_arxiv.csv"), index=False)
     return out

@@ -19,7 +19,8 @@ Writes: <output_dir>/<conf>_authors_arxiv.csv  (in-place, adds ror_* columns,
                                                  overwrites country if ROR confident)
         <output_dir>/ror_cache.json             (resumable cache)
 """
-import argparse, json, os, time
+import argparse, json, os, threading, time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 import pandas as pd
 
@@ -132,19 +133,30 @@ def main():
 
     session = make_session()
     sleep_s = cfg.get("ror", {}).get("sleep_seconds", 0.1)
+    workers = cfg.get("ror", {}).get("workers", 5)
 
-    # Unique affiliations to resolve (skip empty)
-    unique_affils = sorted(a for a in df["affiliation"].unique() if a and len(a) >= 4)
-    print(f"  resolving {len(unique_affils)} unique affiliations")
+    # Unique affiliations to resolve (skip empty + already-cached)
+    unique_affils = sorted(a for a in df["affiliation"].unique()
+                           if a and len(a) >= 4 and a not in cache)
+    print(f"  resolving {len(unique_affils)} unique affiliations ({workers} workers)")
 
-    for i, affil in enumerate(unique_affils):
-        if affil in cache:
-            continue
+    cache_lock = threading.Lock()
+    done = 0
+
+    def worker(affil):
+        # Each thread has its own session via thread-local — but requests.Session is
+        # thread-safe for read paths; sharing one session is fine here
         lookup(session, affil, cache, sleep_s)
-        if (i + 1) % 100 == 0:
-            save_cache(cache_path, cache)
-            n_hit = sum(1 for v in cache.values() if v)
-            print(f"    {i+1}/{len(unique_affils)} | hits: {n_hit}")
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futs = {pool.submit(worker, a): a for a in unique_affils}
+        for fut in as_completed(futs):
+            done += 1
+            if done % 100 == 0:
+                with cache_lock:
+                    save_cache(cache_path, cache)
+                    n_hit = sum(1 for v in cache.values() if v)
+                print(f"    {done}/{len(unique_affils)} | hits: {n_hit}")
     save_cache(cache_path, cache)
     n_hit = sum(1 for v in cache.values() if v)
     print(f"  ROR hits: {n_hit}/{len(cache)} ({n_hit/max(1,len(cache))*100:.0f}%)")

@@ -96,7 +96,13 @@ def parse_tei_header(tei_xml: str):
             if idx is not None:
                 indices.append(idx)
 
-        authors_out.append({"name": name, "aff_indices": indices})
+        # GROBID natively extracts emails into <email> within the author element
+        email = _findtext(au, "tei:email")
+
+        rec = {"name": name, "aff_indices": indices}
+        if email:
+            rec["email"] = email
+        authors_out.append(rec)
 
     return authors_out, affils_out
 

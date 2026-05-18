@@ -105,19 +105,30 @@ def main():
     else:
         df["sector"] = df["affiliation"].apply(classify_sector)
 
-    works, h_idx, sen, ids, hp = [None]*len(df), [None]*len(df), [""]*len(df), [""]*len(df), [""]*len(df)
+    works, h_idx, sen = [None]*len(df), [None]*len(df), [""]*len(df)
+    ids, hp = [""]*len(df), [""]*len(df)
+    confidence = [""]*len(df)
     print("  fetching OpenAlex records…")
     for i, (_, row) in enumerate(df.iterrows()):
         cands = oa_authors(session, row["author_name"], mailto)
         time.sleep(sleep_s)
         if not cands: continue
+        # Confidence levels:
+        #   high   = candidate's last_known_institutions matches our arxiv-derived affil
+        #   medium = only one candidate returned (no other plausible same-name person)
+        #   low    = multiple candidates and none matched the affil — fallback to top hit
         picked = next((c for c in cands if affil_matches(c, row["affiliation"])), None)
-        if not picked and len(cands) == 1: picked = cands[0]
-        if not picked: picked = cands[0]
+        if picked:
+            conf = "high"
+        elif len(cands) == 1:
+            picked = cands[0]; conf = "medium"
+        else:
+            picked = cands[0]; conf = "low"
         wc = picked.get("works_count") or 0
         hh = (picked.get("summary_stats") or {}).get("h_index") or 0
         works[i] = wc; h_idx[i] = hh; sen[i] = seniority_bucket(wc, hh)
         ids[i] = picked.get("id", ""); hp[i] = picked.get("homepage_url") or ""
+        confidence[i] = conf
         if (i+1) % 50 == 0: print(f"    {i+1}/{len(df)}")
 
     df["openalex_id"] = ids
@@ -125,8 +136,9 @@ def main():
     df["h_index"] = h_idx
     df["seniority"] = sen
     df["homepage"] = hp
+    df["openalex_confidence"] = confidence
 
-    df = df.sort_values(["n_matched_papers","h_index"],
+    df = df.sort_values(["n_matched_papers", "h_index"],
                         ascending=[False, False], na_position="last")
     df.to_csv(os.path.join(out_dir, f"{conf}_shortlist.csv"), index=False)
     print(f"  saved {len(df)} → {conf}_shortlist.csv")
@@ -134,6 +146,10 @@ def main():
     print(df.sector.value_counts().to_string())
     print(f"\n  seniority breakdown:")
     print(df[df.seniority != ""].seniority.value_counts().to_string())
+    print(f"\n  OpenAlex disambiguation confidence:")
+    print(df.openalex_confidence.value_counts().to_string())
+    print(f"  ({(df.openalex_confidence == 'low').sum()} rows where h-index/works_count "
+          f"may be inflated due to same-name collisions — review when sorting by h_index)")
 
 
 if __name__ == "__main__":
