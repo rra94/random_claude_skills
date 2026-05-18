@@ -168,36 +168,6 @@ newlines and commas in abstracts/affiliations won't break the import.
 
 ---
 
-## Origin story (provenance of this skill)
-
-This skill is the cleaned-up version of a pipeline built in a single Claude Code session
-targeting CVPR 2026 hiring. The session went through several false starts that informed
-the design here:
-
-1. First attempt used `openreview-py` against `thecvf.com/CVPR/2026/Conference` → 0 results
-   (CVPR isn't on OpenReview). Pivot: scrape `cvpr.thecvf.com/virtual/2026/papers.html`.
-2. Second attempt used Anthropic API for classification → user didn't have a key. Pivot:
-   regex/keyword classifier (works for the common research areas with carefully written
-   patterns; less accurate for nuanced topics).
-3. Third attempt used Semantic Scholar for affiliations → 429 on every request, 0%
-   coverage. Pivot: OpenAlex.
-4. Fourth attempt used OpenAlex paper-search → too noisy on recent papers (author IDs not
-   yet linked, wrong same-name matches). Pivot: arxiv PDF scrape.
-5. Fifth attempt used per-title arxiv search → rate-limited and buggy. Pivot: bulk arxiv
-   fetch + local fuzzy match + parallel PDF parse. **This is the path that worked.**
-6. Phase D homepage scrape via DDG → rate-blocked after 20 queries. Pivot: Brave HTML →
-   same problem. Resolution: documented Brave Search API key path as optional add-on.
-
-Result on the original CVPR 2026 run:
-- 4,070 papers scraped
-- 959 matched to target areas (10 areas covering pose/segmentation/3D/robotics/VLA/etc.)
-- 5,289 unique authors across those papers
-- 590 in US/CA/UK/EU/India keep-list with confirmed affiliations
-- 321 academic, 189 industry, 46 mixed sectors
-- 288 Senior, 120 Mid, 179 Junior by seniority bucket
-
----
-
 ## Limitations to surface in any report to the user
 
 1. ~30–50% of authors have unknown affiliation (no arxiv preprint we could match)
