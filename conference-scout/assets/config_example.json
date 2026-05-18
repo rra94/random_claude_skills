@@ -1,0 +1,112 @@
+{
+  "conference": "CVPR",
+  "year": 2026,
+  "output_dir": "./cvpr2026_scout/",
+
+  "scrape": {
+    "source": "cvf",
+    "cvf_url": "https://cvpr.thecvf.com/virtual/2026/papers.html",
+    "openreview_venue_id": null,
+    "max_workers": 16
+  },
+
+  "classify": {
+    "target_areas": {
+      "Pose Estimation": [
+        "\\bpose estimation\\b", "\\bhuman pose\\b", "\\bhand pose\\b",
+        "\\bobject pose\\b", "\\b6[- ]?do[fp]\\b", "\\b6d pose\\b",
+        "\\bkeypoint(s|\\s+detection)?\\b", "\\bhpe\\b",
+        "\\bbody pose\\b", "\\barticulated pose\\b"
+      ],
+      "Instance Segmentation": [
+        "\\binstance segmentation\\b", "\\bpanoptic segmentation\\b",
+        "\\bopen[- ]vocabulary segmentation\\b", "\\binteractive segmentation\\b",
+        "\\bsegment anything\\b", "\\bsam\\b"
+      ],
+      "VLA": [
+        "\\bvision[- ]language[- ]action\\b", "\\bvla\\b",
+        "\\blanguage[- ]conditioned (policy|policies|manipulation|control)\\b",
+        "\\bopenvla\\b", "\\bpi[- ]?0\\b", "\\brt[- ]?2\\b",
+        "\\bgeneralist (robot|manipulation) policy\\b"
+      ],
+      "Robot Learning": [
+        "\\brobotic? manipulation\\b", "\\brobot learning\\b",
+        "\\bimitation learning\\b", "\\bbehavior cloning\\b",
+        "\\bdiffusion policy\\b", "\\bdexterous (manipulation|hand)\\b",
+        "\\bgrasp(ing)?\\b", "\\bend[- ]effector\\b",
+        "\\b(robotic|robot) policy\\b", "\\bteleoperation\\b"
+      ],
+      "Camera Pose Tracking": [
+        "\\bcamera pose\\b", "\\bslam\\b", "\\bvisual odometry\\b",
+        "\\bvio\\b", "\\bcamera localization\\b", "\\bcamera tracking\\b",
+        "\\bego[- ]?motion\\b", "\\bvisual[- ]inertial\\b"
+      ],
+      "Synthetic Data": [
+        "\\bsynthetic data\\b", "\\bsynthetic dataset\\b",
+        "\\bdata (generation|synthesis)\\b", "\\bsim[- ]?to[- ]?real\\b",
+        "\\bprocedural generation\\b", "\\bdomain randomization\\b"
+      ],
+      "3D Reconstruction": [
+        "\\b3d reconstruction\\b", "\\bnerf\\b", "\\bneural radiance\\b",
+        "\\bgaussian splatting\\b", "\\b3dgs\\b",
+        "\\bstructure[- ]from[- ]motion\\b", "\\bsfm\\b",
+        "\\bmulti[- ]view stereo\\b", "\\bmvs\\b",
+        "\\bmesh reconstruction\\b", "\\bshape reconstruction\\b",
+        "\\bsurface reconstruction\\b", "\\bscene reconstruction\\b"
+      ],
+      "Video Action Models": [
+        "\\baction recognition\\b", "\\bvideo action\\b",
+        "\\btemporal action (localization|detection)\\b",
+        "\\bspatio[- ]?temporal action\\b"
+      ],
+      "World Models": [
+        "\\bworld model(s|ing)?\\b", "\\bvideo (prediction|world model)\\b",
+        "\\bgenerative world model\\b"
+      ],
+      "Depth Estimation": [
+        "\\bdepth estimation\\b", "\\bmonocular depth\\b",
+        "\\bstereo depth\\b", "\\bdepth completion\\b",
+        "\\bdepth prediction\\b", "\\bself[- ]supervised depth\\b"
+      ]
+    }
+  },
+
+  "arxiv": {
+    "categories": ["cs.CV", "cs.AI", "cs.LG", "cs.RO", "cs.GR", "cs.MM"],
+    "date_windows": [
+      ["202509010000", "202510310000"],
+      ["202511010000", "202511300000"],
+      ["202512010000", "202512310000"],
+      ["202601010000", "202601310000"],
+      ["202602010000", "202602280000"],
+      ["202603010000", "202603310000"],
+      ["202604010000", "202604300000"],
+      ["202605010000", "202605200000"]
+    ],
+    "page_size": 2000,
+    "api_sleep_seconds": 3.1,
+    "pdf_workers": 12,
+    "fuzzy_match_threshold": 0.7
+  },
+
+  "filter": {
+    "keep_countries": [
+      "US", "CA", "GB",
+      "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR",
+      "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL",
+      "PL", "PT", "RO", "SK", "SI", "ES", "SE",
+      "CH", "NO", "IS", "LI",
+      "IL",
+      "IN"
+    ]
+  },
+
+  "openalex": {
+    "mailto": "you@example.com",
+    "sleep_seconds": 0.12
+  },
+
+  "brave_api_key": null,
+
+  "_comment": "Set brave_api_key to a free Brave Search API key (https://api-dashboard.search.brave.com/) to enable Phase D homepage + position enrichment. If null, those columns stay empty."
+}
