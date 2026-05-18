@@ -60,7 +60,18 @@ def domain_to_country(domain: str) -> str:
 
 
 def make_client():
+    # OpenReview profile search now requires login (changed in 2025). Pick up creds from
+    # env vars if available; otherwise use guest client (which will hit ForbiddenError on
+    # the first search, logged once and the stage exits gracefully).
+    user = os.environ.get("OPENREVIEW_USERNAME")
+    pw = os.environ.get("OPENREVIEW_PASSWORD")
+    if user and pw:
+        return openreview.api.OpenReviewClient(
+            baseurl="https://api2.openreview.net", username=user, password=pw)
     return openreview.api.OpenReviewClient(baseurl="https://api2.openreview.net")
+
+
+_AUTH_WARNED = [False]
 
 
 def lookup_profile(client, name: str, cache: dict) -> dict | None:
@@ -90,6 +101,16 @@ def lookup_profile(client, name: str, cache: dict) -> dict | None:
         cache[name] = None
         return None
     except Exception as e:
+        msg = str(e)
+        # OpenReview switched profile search to logged-in-only in 2025+. Detect once,
+        # print a clear message, and abort the whole stage so we don't spam the log.
+        if "ForbiddenError" in msg or "logged in" in msg or "403" in msg:
+            if not _AUTH_WARNED[0]:
+                _AUTH_WARNED[0] = True
+                print("\n  [openreview] profile search now requires authentication.")
+                print("  Set OPENREVIEW_USERNAME + OPENREVIEW_PASSWORD env vars, or skip this stage.")
+                print("  Aborting fallback (the rest of the pipeline will continue).\n")
+            raise SystemExit(0)
         print(f"  [warn] profile lookup failed for {name}: {e}")
         cache[name] = None
         return None

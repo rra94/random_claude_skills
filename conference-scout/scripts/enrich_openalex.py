@@ -119,16 +119,16 @@ def main():
         #   low    = multiple candidates and none matched the affil — fallback to top hit
         picked = next((c for c in cands if affil_matches(c, row["affiliation"])), None)
         if picked:
-            conf = "high"
+            conf_label = "high"
         elif len(cands) == 1:
-            picked = cands[0]; conf = "medium"
+            picked = cands[0]; conf_label = "medium"
         else:
-            picked = cands[0]; conf = "low"
+            picked = cands[0]; conf_label = "low"
         wc = picked.get("works_count") or 0
         hh = (picked.get("summary_stats") or {}).get("h_index") or 0
         works[i] = wc; h_idx[i] = hh; sen[i] = seniority_bucket(wc, hh)
         ids[i] = picked.get("id", ""); hp[i] = picked.get("homepage_url") or ""
-        confidence[i] = conf
+        confidence[i] = conf_label
         if (i+1) % 50 == 0: print(f"    {i+1}/{len(df)}")
 
     df["openalex_id"] = ids
